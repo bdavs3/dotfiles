@@ -1,0 +1,14 @@
+new_tab zsh
+launch
+launch
+
+layout tall
+
+new_tab notes
+launch --cwd=notes/2022
+launch --cwd=notes
+
+layout tall
+
+new_tab chezmoi
+launch --cwd=.local/share/chezmoi

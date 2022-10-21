@@ -1,0 +1,88 @@
+#!/usr/bin/env zsh
+
+# Copies whatever follows it
+function cmd_copy {
+    echo -n "$@" | pbcopy
+}
+
+function cs {
+    cd $1 && colorls
+}
+
+# Lets you see the difference between a src and dst prefix (which you hope to be the same)
+# IN DEVELOPMENT: need to swap accounts between ls commands
+function diff_s3_prefixes {
+    aws s3 ls --human-readable "$1" | awk '{print $3, $4, $5}' > src.txt;
+    aws s3 ls --human-readable "$2" | awk '{print $3, $4, $5}' > dst.txt;
+    git diff src.txt dst.txt;
+    rm src.txt dst.txt;
+}
+
+# Searches the zsh help page associated with the first argument for the term in the second argument
+function flag_is {
+    run-help "$1" | grep -A 8 -- " $2"
+}
+
+function l3 {
+    aws s3 ls --human-readable --summarize "$@"
+}
+
+function gdefault {
+    git remote show origin | sed -n '/HEAD branch/s/.*: //p'
+}
+
+# Clean up a local git branch for reuse (after its remote counterpart has been
+# rebased and merged in origin/main)
+function git_cleanup_branch {
+    if [[ $2 ]]; then
+      export default=$2
+    else
+      export default="main"
+    fi
+
+    git checkout $default;
+    git pull --rebase;
+    git checkout $1;
+    git rebase $default;
+    git push -f origin $1;
+}
+
+# Pulls up a preview of the given parquet file as json in chrome
+function parq_print {
+    parquet-tools cat --json "$1" | head -n 1 > tmp.json && open -a "Google Chrome" tmp.json && sleep 5 && rm tmp.json
+}
+
+# Loop through all directories recursively, renaming dir names with standalone
+# digits by prepending a 0. The first command takes care of digits with leading 
+# underscores, and the second digits with trailing underscores. I'm not sure 
+# how to do them both at once. Sed regexs are a little different than grep.
+function prepend_zeros {
+    for f in */**; do echo $f | mv $f $(echo $f | sed 's/\(_\)\([[:digit:]]\)[[:>:]]/\10\2/g'); done
+    for f in */**; do echo $f | mv $f $(echo $f | sed 's/[[:<:]][[:digit:]]_/0&/g'); done
+}
+
+# Searches directory given by the second argument for the pattern in the first argument
+function recursive_search {
+    grep -R $1 $2
+}
+
+# Replace all occurences of given pattern in files. Empty string is needed after -i
+# because sed expects an extension.
+function replace_pattern_in_directory {
+    find . -type f | xargs sed -i '' 's/$1/$2/g'
+}
+
+# Like a ctrl-f for all filenames in current directory
+function search_for_files {
+    find . -type f | grep "$1"
+}
+
+# Like a ctrl-f within all files in current directory
+function search_in_files {
+    grep -rnw . -e "$1"
+}
+
+# Searches 'git log' for a given expression
+function searchlog {
+    git log -S "$@" --pretty=format:'%h %an %ad %s'
+}
